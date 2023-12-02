@@ -1,20 +1,14 @@
 package advent2023.d01;
 
+import advent2023.AbstractTest;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestSolution01 {
+public class TestSolution01 extends AbstractTest {
 
     @Test
     public void testStep1() throws Exception {
@@ -45,10 +39,4 @@ public class TestSolution01 {
         assertEquals(53894, new Solution01().step2(input));
     }
 
-    private List<String> getInput(String file) throws URISyntaxException, IOException {
-        URL resource = TestSolution01.class.getResource(file);
-        assert resource != null;
-        Path path = Paths.get(resource.toURI());
-        return Files.readAllLines(path, StandardCharsets.UTF_8);
-    }
 }
