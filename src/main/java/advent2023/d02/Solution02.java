@@ -12,4 +12,12 @@ public class Solution02 {
                 .reduce(Integer::sum)
                 .orElseGet(()->0);
     }
+
+    public int step2(List<String> input, int red, int green, int blue){
+        return input.stream()
+                .map(l-> new Game(l))
+                .map(g -> g.getRed() * g.getGreen() * g.getBlue())
+                .reduce(Integer::sum)
+                .orElseGet(() -> 0);
+    }
 }

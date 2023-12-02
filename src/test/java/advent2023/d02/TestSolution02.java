@@ -40,4 +40,16 @@ public class TestSolution02 extends AbstractTest {
         List<String> input = getInput("input02.txt");
         assertEquals(2204, new Solution02().step1(input, 12, 13, 14));
     }
+
+    @Test
+    public void testStep2() throws Exception {
+        List<String> input = getInput("input01.txt");
+        assertEquals(2286, new Solution02().step2(input, 12, 13, 14));
+    }
+
+    @Test
+    public void testStep2Actual() throws Exception {
+        List<String> input = getInput("input02.txt");
+        assertEquals(71036, new Solution02().step2(input, 12, 13, 14));
+    }
 }

@@ -14,7 +14,7 @@ import java.util.List;
 public abstract class AbstractTest {
 
     protected List<String> getInput(String file) throws URISyntaxException, IOException {
-        URL resource = TestSolution02.class.getResource(file);
+        URL resource = getClass().getResource(file);
         assert resource != null;
         Path path = Paths.get(resource.toURI());
         return Files.readAllLines(path, StandardCharsets.UTF_8);
