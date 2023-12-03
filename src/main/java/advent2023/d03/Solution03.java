@@ -37,9 +37,6 @@ public class Solution03 {
                     accumulator = 0;
                 }
             }
-            if (keep) {
-                total += accumulator;
-            }
         }
         return total;
     }
@@ -73,10 +70,6 @@ public class Solution03 {
                     accumulator = 0;
                 }
             }
-            if (gearId != null) {
-                gears.putIfAbsent(gearId, new ArrayList<>());
-                gears.get(gearId).add(accumulator);
-            }
         }
 
         return gears.values().stream()
@@ -87,7 +80,11 @@ public class Solution03 {
     }
 
     private char[][] buildMap(List<String> input) {
-        return input.stream().map(String::toCharArray).toList().toArray(new char[0][0]);
+        return input.stream()
+                .map(s -> s + ".") // to better handle the border
+                .map(String::toCharArray)
+                .toList()
+                .toArray(new char[0][0]);
     }
 
 }
