@@ -1,13 +1,9 @@
 package advent2023.d03;
 
-import advent2023.d02.Game;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
 public class Solution03 {
 
