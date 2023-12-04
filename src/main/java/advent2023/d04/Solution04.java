@@ -1,21 +1,18 @@
 package advent2023.d04;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.util.*;
-
-import static java.util.Arrays.asList;
-import static java.lang.Integer.parseInt;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Arrays.asList;
 
 
 public class Solution04 {
 
-    private static final Pattern pattern = Pattern.compile("Card +(\\d)+: +([\\d ]+)\\| +([\\d ]+)");
+    private static final Pattern pattern = Pattern.compile("Card +(\\d+): +([\\d ]+)\\| +([\\d ]+)");
 
     public int step1(List<String> input) {
         return input.stream()
@@ -35,14 +32,13 @@ public class Solution04 {
                 .map(Card::new)
                 .toList();
         int total = 0;
-        List<Integer> extra = new ArrayList<>();
+        int[] extra = new int[originalCards.size()];
         for(Card c : originalCards){
-            int bonus = extra.size()>0? extra.remove(0): 0;
+            int bonus = extra[c.getId()-1];
             total= total + 1 + bonus;
-            for(int i = 0; i<c.getPoints();i++){
-                assert extra.size()>i-1;
-                int current = extra.size()>i? extra.remove(i): 0;
-                extra.add(i, current + (1+bonus));
+            for(int i = 0; i<c.getPoints() && i+c.getId()<extra.length;i++){
+                int current = extra[i+c.getId()];
+                extra[c.getId()+i] = current + (1+bonus);
             }
         }
         return total;
