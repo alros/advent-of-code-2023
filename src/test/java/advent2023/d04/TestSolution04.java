@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -70,6 +71,18 @@ public class TestSolution04 extends AbstractTest {
     public void testStep1Actual() throws Exception {
         List<String> input = getInput("input02.txt");
         assertEquals(24706, new Solution04().step1(input));
+    }
+
+    @Test
+    public void testStep2() throws Exception {
+        List<String> input = getInput("input01.txt");
+        assertEquals(30, new Solution04().step2(input));
+    }
+
+    @Test
+    public void testStep2Actual() throws Exception {
+        List<String> input = getInput("input02.txt");
+        assertEquals(13114317, new Solution04().step2(input));
     }
 
 }
