@@ -29,6 +29,27 @@ public class Solution05 {
         return seedLocations.values().stream().sorted().findFirst().get();
     }
 
+    public long step2(List<String> input) {
+        List<Long> seeds = extractSeeds(input);
+        Mappings mappings = extractMappings(input);
+
+        Map<Long, Long> seedLocations = new HashMap<>();
+        for(int i=0;i<seeds.size();i+=2){
+            System.out.println("processing seed number: "+i);
+            Long curSeed = seeds.get(i);
+            Long range = seeds.get(i + 1);
+            long start = System.currentTimeMillis();
+            for(long seed = curSeed; seed< curSeed + range; seed++){
+                if(seed % 100000 == 0){
+                    System.out.println("- "+seed + " -> "+(curSeed+range)+ " in "+ (System.currentTimeMillis()- start));
+                    start = System.currentTimeMillis();
+                }
+                seedLocations.put(seed, findLocation(seed, mappings));
+            }
+        }
+        return seedLocations.values().stream().sorted().findFirst().get();
+    }
+
     private Long findLocation(Long seed, Mappings mappings) {
         Long location = mappings.seedSoil.stream()
                 .filter(m-> m.sourceRangeStart<=seed)

@@ -22,4 +22,16 @@ public class TestSolution05 extends AbstractTest {
         assertEquals(265018614L, new Solution05().step1(input));
     }
 
+    @Test
+    public void testStep2() throws Exception {
+        List<String> input = getInput("input01.txt");
+        assertEquals(46L, new Solution05().step2(input));
+    }
+
+    @Test
+    public void testStep2actual() throws Exception {
+        List<String> input = getInput("input02.txt");
+        assertEquals(-1, new Solution05().step2(input));
+    }
+
 }
