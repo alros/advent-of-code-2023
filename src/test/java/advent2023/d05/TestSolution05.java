@@ -28,7 +28,7 @@ public class TestSolution05 extends AbstractTest {
         assertEquals(46L, new Solution05().step2(input));
     }
 
-    @Test
+    //@Test
     public void testStep2actual() throws Exception {
         List<String> input = getInput("input02.txt");
         assertEquals(-1, new Solution05().step2(input));

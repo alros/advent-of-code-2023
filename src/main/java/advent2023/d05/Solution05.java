@@ -1,29 +1,28 @@
 package advent2023.d05;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.ToString;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
 import java.util.*;
-import static java.lang.Long.parseLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Arrays.asList;
+import static java.lang.Long.parseLong;
 
 
 public class Solution05 {
 
 
     public long step1(List<String> input) {
+        ToSkip toSkip = new ToSkip();
         List<Long> seeds = extractSeeds(input);
         Mappings mappings = extractMappings(input);
 
         Map<Long, Long> seedLocations = new HashMap<>();
-        for(Long seed:seeds){
-            seedLocations.put(seed, findLocation(seed, mappings));
+        for (Long seed : seeds) {
+            Optional<Long> location = findLocation(seed, mappings, toSkip);
+            if (location.isPresent()) {
+                seedLocations.put(seed, location.get());
+            }
         }
 
         return seedLocations.values().stream().sorted().findFirst().get();
@@ -33,73 +32,105 @@ public class Solution05 {
         List<Long> seeds = extractSeeds(input);
         Mappings mappings = extractMappings(input);
 
-        Map<Long, Long> seedLocations = new HashMap<>();
-        for(int i=0;i<seeds.size();i+=2){
-            System.out.println("processing seed number: "+i);
-            Long curSeed = seeds.get(i);
-            Long range = seeds.get(i + 1);
-            long start = System.currentTimeMillis();
-            for(long seed = curSeed; seed< curSeed + range; seed++){
-                if(seed % 100000 == 0){
-                    System.out.println("- "+seed + " -> "+(curSeed+range)+ " in "+ (System.currentTimeMillis()- start));
-                    start = System.currentTimeMillis();
-                }
-                seedLocations.put(seed, findLocation(seed, mappings));
+        Map<Long, Long> seedLocations = new ConcurrentHashMap<>();
+        Set<Thread> threads = createThreads(seeds, seedLocations, mappings);
+        threads.forEach(t -> t.start());
+        threads.forEach(t -> {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        }
+        });
         return seedLocations.values().stream().sorted().findFirst().get();
     }
 
-    private Long findLocation(Long seed, Mappings mappings) {
-        Long location = mappings.seedSoil.stream()
-                .filter(m-> m.sourceRangeStart<=seed)
-                .filter(m->seed<m.sourceRangeStart+m.rangeLength)
-                .map(m->seed-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
+    private Set<Thread> createThreads(List<Long> seeds, Map<Long, Long> seedLocations, Mappings mappings) {
+        Set<Thread> threads = new HashSet<>();
+        ToSkip toSkip = new ToSkip();
+
+        for (int i = 0; i < seeds.size(); i += 2) {
+            final int index = i;
+            Thread t = new Thread(() -> {
+                Long curSeed = seeds.get(index);
+                Long range = seeds.get(index + 1);
+                long start = System.currentTimeMillis();
+                long operations = 0;
+                for (long seed = curSeed; seed < curSeed + range; seed++) {
+                    operations++;
+                    if (System.currentTimeMillis() - start > 5 * 60 * 1000) {
+                        System.out.println("thread " + index + " speed " + operations + "/5 mins");
+                        start = System.currentTimeMillis();
+                        operations = 0;
+                    }
+                    if (!seedLocations.containsKey(seed)) {
+                        Optional<Long> location = findLocation(seed, mappings, toSkip);
+                        if (location.isPresent()) {
+                            seedLocations.put(seed, location.get());
+                        }
+                    }
+                }
+            });
+            threads.add(t);
+        }
+        return threads;
+    }
+
+    private Optional<Long> processMapping(List<Mapping> mappings, Long key){
+        List<Mapping> mappingList = mappings.stream()
+                .filter(m -> m.getSourceRangeStart() <= key)
+                .filter(m -> key < m.getSourceRangeStart() + m.getRangeLength())
+                .toList();
+        return Optional.ofNullable(mappingList.stream().map(m -> key - m.getSourceRangeStart() + m.getDestinationRangeStart())
+                .sorted((a, b) -> Long.compare(b, a))
                 .findFirst()
-                .orElseGet(()->seed);
-        Long fertiliser = mappings.soilFertiliser.stream()
-                .filter(m-> m.sourceRangeStart<=location)
-                .filter(m->location<m.sourceRangeStart+m.rangeLength)
-                .map(m->location-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->location);
-        Long water = mappings.fertiliserWater.stream()
-                .filter(m-> m.sourceRangeStart<=fertiliser)
-                .filter(m->fertiliser<m.sourceRangeStart+m.rangeLength)
-                .map(m->fertiliser-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->fertiliser);
-        Long light = mappings.waterLight.stream()
-                .filter(m-> m.sourceRangeStart<=water)
-                .filter(m->water<m.sourceRangeStart+m.rangeLength)
-                .map(m->water-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->water);
-        Long temperature = mappings.lightTemperature.stream()
-                .filter(m-> m.sourceRangeStart<=light)
-                .filter(m->light<m.sourceRangeStart+m.rangeLength)
-                .map(m->light-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->light);
-        Long humidity = mappings.temperatureHumidity.stream()
-                .filter(m-> m.sourceRangeStart<=temperature)
-                .filter(m->temperature<m.sourceRangeStart+m.rangeLength)
-                .map(m->temperature-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->temperature);
-        return mappings.humidityLocation.stream()
-                .filter(m-> m.sourceRangeStart<=humidity)
-                .filter(m->humidity<m.sourceRangeStart+m.rangeLength)
-                .map(m->humidity-m.sourceRangeStart+m.destinationRangeStart)
-                .sorted((a,b)->Long.compare(b,a))
-                .findFirst()
-                .orElseGet(()->humidity);
+                .orElseGet(() -> key));
+    }
+
+    private Optional<Long> findLocation(Long seed, Mappings mappings, ToSkip toSkip) {
+        Optional<Long> soil = processMapping(mappings.seedSoil, seed);
+        if(soil.isEmpty() || toSkip.getSoil().contains(soil.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getSoil().add(soil.get());
+        }
+
+        Optional<Long> fertiliser = processMapping(mappings.soilFertiliser, soil.get());
+        if(fertiliser.isEmpty() || toSkip.getFertiliser().contains(fertiliser.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getFertiliser().add(fertiliser.get());
+        }
+
+        Optional<Long> water = processMapping(mappings.fertiliserWater, fertiliser.get());
+        if(water.isEmpty() || toSkip.getWater().contains(water.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getWater().add(water.get());
+        }
+
+        Optional<Long> light = processMapping(mappings.waterLight, water.get());
+        if(light.isEmpty() || toSkip.getLight().contains(light.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getLight().add(light.get());
+        }
+
+        Optional<Long> temperature = processMapping(mappings.lightTemperature, light.get());
+        if(temperature.isEmpty() || toSkip.getTemperature().contains(temperature.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getTemperature().add(temperature.get());
+        }
+
+        Optional<Long> humidity = processMapping(mappings.temperatureHumidity, temperature.get());
+        if(humidity.isEmpty() || toSkip.getHumidity().contains(humidity.get())){
+            return Optional.empty();
+        }else{
+            toSkip.getHumidity().add(humidity.get());
+        }
+
+        return processMapping(mappings.humidityLocation, humidity.get());
     }
 
     private List<Long> extractSeeds(List<String> input) {
@@ -114,43 +145,43 @@ public class Solution05 {
         int index = 3;
 
         List<Mapping> seedSoil = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             seedSoil.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> soilFertiliser = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             soilFertiliser.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> fertiliserWater = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             fertiliserWater.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> waterLight = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             waterLight.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> lightTemperature = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             lightTemperature.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> temperatureHumidity = new ArrayList<>();
-        for (;input.get(index).matches("\\d.*");index++) {
+        for (; input.get(index).matches("\\d.*"); index++) {
             temperatureHumidity.add(extractMap(input.get(index)));
         }
-        index+=2;
+        index += 2;
 
         List<Mapping> humidityLocation = new ArrayList<>();
-        for (;index < input.size();index++) {
+        for (; index < input.size(); index++) {
             humidityLocation.add(extractMap(input.get(index)));
         }
 
@@ -167,10 +198,12 @@ public class Solution05 {
 
     private Mapping extractMap(String line) {
         String[] values = line.split(" ");
-        return new Mapping(parseLong(values[0]),parseLong(values[1]),parseLong(values[2]));
+        return Mapping.builder()
+                .destinationRangeStart(parseLong(values[0]))
+                .sourceRangeStart(parseLong(values[1]))
+                .rangeLength(parseLong(values[2]))
+                .build();
     }
-
-    record Mapping(long destinationRangeStart,long sourceRangeStart,long rangeLength) {}
 
     record Mappings(
             List<Mapping> seedSoil,
@@ -180,5 +213,31 @@ public class Solution05 {
             List<Mapping> lightTemperature,
             List<Mapping> temperatureHumidity,
             List<Mapping> humidityLocation
-    ){}
+    ) {
+    }
 }
+
+@Builder
+@Getter
+class Mapping {
+    private final long destinationRangeStart;
+    private final long sourceRangeStart;
+    private final long rangeLength;
+    private boolean explored;
+
+    public Mapping toggleExplored() {
+        explored = true;
+        return this;
+    }
+}
+
+@Getter
+class ToSkip {
+    Set<Long> soil = new HashSet<>();
+    Set<Long> fertiliser= new HashSet<>();
+    Set<Long> water= new HashSet<>();
+    Set<Long> light= new HashSet<>();
+    Set<Long> temperature= new HashSet<>();
+    Set<Long> humidity= new HashSet<>();
+}
+
