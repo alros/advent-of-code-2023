@@ -8,9 +8,17 @@ import java.util.Map;
 
 public class Solution07 {
     public long step1(List<String> input) {
+        return solve(input, false);
+    }
+
+    public long step2(List<String> input) {
+        return solve(input, true);
+    }
+
+    private long solve(List<String> input, boolean activateJokers) {
         List<Hand> hands = input.stream()
                 .map(s -> s.split(" "))
-                .map(s -> new Hand(s[0], Integer.parseInt(s[1])))
+                .map(s -> new Hand(s[0], Integer.parseInt(s[1]), activateJokers))
                 .sorted()
                 .toList();
         long win = 0;
@@ -19,7 +27,6 @@ public class Solution07 {
         }
         return win;
     }
-
 }
 
 @Getter
@@ -32,25 +39,22 @@ class Hand implements Comparable<Hand> {
     public static final int ONE_PAIR = 2;
     public static final int HIGH_CARD = 1;
 
+    private static final String[] orig = {"2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"};
+    private static final String[] repl = {"b", "c", "d", "e", "f", "g", "h", "i", "l", "m", "n", "o", "p"};
+    private static final String[] repJ = {"b", "c", "d", "e", "f", "g", "h", "i", "l", "a", "n", "o", "p"};
+
     private final char[] cards;
     private final int bid;
 
     public Hand(String cards, int bid) {
-        this.cards = cards
-                .replaceAll("2", "a")
-                .replaceAll("3", "b")
-                .replaceAll("4", "c")
-                .replaceAll("5", "d")
-                .replaceAll("6", "e")
-                .replaceAll("7", "f")
-                .replaceAll("8", "g")
-                .replaceAll("9", "h")
-                .replaceAll("T", "i")
-                .replaceAll("J", "l")
-                .replaceAll("Q", "m")
-                .replaceAll("K", "n")
-                .replaceAll("A", "o")
-                .toCharArray();
+        this(cards, bid, false);
+    }
+
+    public Hand(String cards, int bid, boolean activateJokers) {
+        for (int i = 0; i < orig.length; i++) {
+            cards = cards.replaceAll(orig[i], activateJokers ? repJ[i] : repl[i]);
+        }
+        this.cards = cards.toCharArray();
         this.bid = bid;
     }
 
@@ -63,26 +67,48 @@ class Hand implements Comparable<Hand> {
             return FIVE_OF_A_KIND;
         }
         if (map.size() == 2) {
-            if (map.get(cards[0]) == 4 || map.get(cards[1]) == 4){
-                return FOUR_OF_A_KIND;
-            } else{
-                return FULL_HOUSE;
+            if (containsJoker(map)) {
+                return FIVE_OF_A_KIND;
             }
+            if (map.get(cards[0]) == 4 || map.get(cards[1]) == 4) {
+                return FOUR_OF_A_KIND;
+            }
+            return FULL_HOUSE;
         }
         if (map.size() == 3) {
             if (map.get(cards[0]) == 3 || map.get(cards[1]) == 3 || map.get(cards[2]) == 3) {
+                if (getJokers(map) == 2) {
+                    return FIVE_OF_A_KIND;
+                }
+                if (containsJoker(map)) {
+                    return FOUR_OF_A_KIND;
+                }
                 return THREE_OF_A_KIND;
             } else {
+                if(getJokers(map) == 1){
+                    return FULL_HOUSE;
+                }
+                if(containsJoker(map)){
+                    return FOUR_OF_A_KIND;
+                }
                 return TWO_PAIR;
             }
         }
-        if (map.size() == 5) {
-            return HIGH_CARD;
-        }
         if (map.size() == 4) {
-            return ONE_PAIR;
+            return containsJoker(map) ? THREE_OF_A_KIND : ONE_PAIR;
+        }
+        if (map.size() == 5) {
+            return containsJoker(map) ? ONE_PAIR : HIGH_CARD;
         }
         return -1;
+    }
+
+    private static Integer getJokers(Map<Character, Integer> map) {
+        return map.getOrDefault('a', 0);
+    }
+
+    private static boolean containsJoker(Map<Character, Integer> map) {
+        return map.containsKey('a');
     }
 
     @Override
